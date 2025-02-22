@@ -15,6 +15,7 @@ on:
 env:
   MIN_FLASH_POS_DIFF_FOR_COMMENT: 50
   MIN_FLASH_NEG_DIFF_FOR_COMMENT: -50
+  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
 jobs:
   analyze_flash:
@@ -118,6 +119,7 @@ jobs:
           PX4_FMU_V6X_OUTPUT: ${{ needs.analyze_flash.outputs.px4_fmu-v6x-bloaty-output }}
           BUILD_TIME: ${{ steps.bt.outputs.timestamp }}
         with:
+          github-token: ${{ env.GH_TOKEN }}
           script: |
             const body = `## 🔎 FLASH Analysis
             <details>
