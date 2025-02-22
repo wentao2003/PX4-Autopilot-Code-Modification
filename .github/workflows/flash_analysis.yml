@@ -8,14 +8,13 @@ on:
   push:
     branches:
       - 'main'
-  pull_request:
+  pull_request_target:  # Changed from pull_request
     branches:
       - '*'
 
 env:
   MIN_FLASH_POS_DIFF_FOR_COMMENT: 50
   MIN_FLASH_NEG_DIFF_FOR_COMMENT: -50
-  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
 jobs:
   analyze_flash:
@@ -36,6 +35,7 @@ jobs:
         with:
           fetch-depth: 0
           submodules: recursive
+          ref: ${{ github.event.pull_request.head.sha }}  # Checkout the PR's head commit
 
       - name: Git ownership workaround
         run: git config --system --add safe.directory '*'
@@ -119,7 +119,6 @@ jobs:
           PX4_FMU_V6X_OUTPUT: ${{ needs.analyze_flash.outputs.px4_fmu-v6x-bloaty-output }}
           BUILD_TIME: ${{ steps.bt.outputs.timestamp }}
         with:
-          github-token: ${{ env.GH_TOKEN }}
           script: |
             const body = `## 🔎 FLASH Analysis
             <details>
