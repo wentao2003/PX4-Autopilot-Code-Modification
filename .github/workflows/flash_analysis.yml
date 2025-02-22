@@ -52,7 +52,6 @@ jobs:
 
       - name: If it's a PR checkout the base branch
         if: ${{ github.event.pull_request }}
-        # As checkout creates a merge commit (merging the base branch into the PR branch), the base branch is the base for a diff of the PR changes.
         run: git checkout ${{ github.event.pull_request.base.ref }}
 
       - name: If it's a push checkout the previous commit
@@ -110,6 +109,14 @@ jobs:
           env.V6X-SUMMARY-MAP-ABS >= fromJSON(env.MIN_FLASH_POS_DIFF_FOR_COMMENT) ||
           env.V6X-SUMMARY-MAP-ABS <= fromJSON(env.MIN_FLASH_NEG_DIFF_FOR_COMMENT)
         uses: actions/github-script@v7
+        env:
+          V5X_SUMMARY_MAP_ABS: ${{ env.V5X-SUMMARY-MAP-ABS }}
+          V5X_SUMMARY_MAP_PERC: ${{ env.V5X-SUMMARY-MAP-PERC }}
+          V6X_SUMMARY_MAP_ABS: ${{ env.V6X-SUMMARY-MAP-ABS }}
+          V6X_SUMMARY_MAP_PERC: ${{ env.V6X-SUMMARY-MAP-PERC }}
+          PX4_FMU_V5X_OUTPUT: ${{ needs.analyze_flash.outputs.px4_fmu-v5x-bloaty-output }}
+          PX4_FMU_V6X_OUTPUT: ${{ needs.analyze_flash.outputs.px4_fmu-v6x-bloaty-output }}
+          BUILD_TIME: ${{ steps.bt.outputs.timestamp }}
         with:
           script: |
             const body = `## 🔎 FLASH Analysis
@@ -155,11 +162,3 @@ jobs:
                 body: body
               });
             }
-          env:
-            V5X_SUMMARY_MAP_ABS: ${{ env.V5X-SUMMARY-MAP-ABS }}
-            V5X_SUMMARY_MAP_PERC: ${{ env.V5X-SUMMARY-MAP-PERC }}
-            V6X_SUMMARY_MAP_ABS: ${{ env.V6X-SUMMARY-MAP-ABS }}
-            V6X_SUMMARY_MAP_PERC: ${{ env.V6X-SUMMARY-MAP-PERC }}
-            PX4_FMU_V5X_OUTPUT: ${{ needs.analyze_flash.outputs.px4_fmu-v5x-bloaty-output }}
-            PX4_FMU_V6X_OUTPUT: ${{ needs.analyze_flash.outputs.px4_fmu-v6x-bloaty-output }}
-            BUILD_TIME: ${{ steps.bt.outputs.timestamp }}
