@@ -98,48 +98,68 @@ jobs:
       V6X-SUMMARY-MAP-PERC: ${{ fromJSON(fromJSON(needs.analyze_flash.outputs.px4_fmu-v6x-bloaty-summary-map).vm-percentage) }}
     if: ${{ github.event.pull_request }}
     steps:
-      - name: Find Comment
-        uses: peter-evans/find-comment@v3
-        id: fc
-        with:
-          issue-number: ${{ github.event.pull_request.number }}
-          comment-author: 'github-actions[bot]'
-          body-includes: FLASH Analysis
-
       - name: Set Build Time
         id: bt
         run: |
           echo "timestamp=$(date +'%Y-%m-%dT%H:%M:%S')" >> $GITHUB_OUTPUT
 
       - name: Create or update comment
-        # This can't be moved to the job-level conditions, as GH actions don't allow a job-level if condition to access the env.
         if: |
-          steps.fc.outputs.comment-id != '' ||
           env.V5X-SUMMARY-MAP-ABS >= fromJSON(env.MIN_FLASH_POS_DIFF_FOR_COMMENT) ||
           env.V5X-SUMMARY-MAP-ABS <= fromJSON(env.MIN_FLASH_NEG_DIFF_FOR_COMMENT) ||
           env.V6X-SUMMARY-MAP-ABS >= fromJSON(env.MIN_FLASH_POS_DIFF_FOR_COMMENT) ||
           env.V6X-SUMMARY-MAP-ABS <= fromJSON(env.MIN_FLASH_NEG_DIFF_FOR_COMMENT)
-        uses: peter-evans/create-or-update-comment@v4
+        uses: actions/github-script@v7
         with:
-          comment-id: ${{ steps.fc.outputs.comment-id }}
-          issue-number: ${{ github.event.pull_request.number }}
-          body: |
-            ## 🔎 FLASH Analysis
+          script: |
+            const body = `## 🔎 FLASH Analysis
             <details>
-              <summary>px4_fmu-v5x [Total VM Diff: ${{ env.V5X-SUMMARY-MAP-ABS }} byte (${{ env.V5X-SUMMARY-MAP-PERC}} %)]</summary>
+              <summary>px4_fmu-v5x [Total VM Diff: ${process.env.V5X_SUMMARY_MAP_ABS} byte (${process.env.V5X_SUMMARY_MAP_PERC} %)]</summary>
 
-              ```
-              ${{ needs.analyze_flash.outputs.px4_fmu-v5x-bloaty-output }}
-              ```
+              \`\`\`
+              ${process.env.PX4_FMU_V5X_OUTPUT}
+              \`\`\`
             </details>
 
             <details>
-              <summary>px4_fmu-v6x [Total VM Diff: ${{ env.V6X-SUMMARY-MAP-ABS }} byte (${{ env.V6X-SUMMARY-MAP-PERC }} %)]</summary>
+              <summary>px4_fmu-v6x [Total VM Diff: ${process.env.V6X_SUMMARY_MAP_ABS} byte (${process.env.V6X_SUMMARY_MAP_PERC} %)]</summary>
 
-              ```
-              ${{ needs.analyze_flash.outputs.px4_fmu-v6x-bloaty-output }}
-              ```
+              \`\`\`
+              ${process.env.PX4_FMU_V6X_OUTPUT}
+              \`\`\`
             </details>
 
-            **Updated: _${{ steps.bt.outputs.timestamp }}_**
-          edit-mode: replace
+            **Updated: _${process.env.BUILD_TIME}_**`;
+
+            // Find existing comment
+            const { data: comments } = await github.rest.issues.listComments({
+              ...context.repo,
+              issue_number: context.issue.number
+            });
+
+            const flashComment = comments.find(comment =>
+              comment.user.type === 'Bot' &&
+              comment.body.includes('FLASH Analysis')
+            );
+
+            if (flashComment) {
+              await github.rest.issues.updateComment({
+                ...context.repo,
+                comment_id: flashComment.id,
+                body: body
+              });
+            } else {
+              await github.rest.issues.createComment({
+                ...context.repo,
+                issue_number: context.issue.number,
+                body: body
+              });
+            }
+          env:
+            V5X_SUMMARY_MAP_ABS: ${{ env.V5X-SUMMARY-MAP-ABS }}
+            V5X_SUMMARY_MAP_PERC: ${{ env.V5X-SUMMARY-MAP-PERC }}
+            V6X_SUMMARY_MAP_ABS: ${{ env.V6X-SUMMARY-MAP-ABS }}
+            V6X_SUMMARY_MAP_PERC: ${{ env.V6X-SUMMARY-MAP-PERC }}
+            PX4_FMU_V5X_OUTPUT: ${{ needs.analyze_flash.outputs.px4_fmu-v5x-bloaty-output }}
+            PX4_FMU_V6X_OUTPUT: ${{ needs.analyze_flash.outputs.px4_fmu-v6x-bloaty-output }}
+            BUILD_TIME: ${{ steps.bt.outputs.timestamp }}
