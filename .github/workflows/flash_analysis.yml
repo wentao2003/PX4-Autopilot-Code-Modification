@@ -138,10 +138,16 @@ jobs:
 
             **Updated: _${process.env.BUILD_TIME}_**`;
 
+            // Get PR details to determine correct repository
+            const prRepo = {
+              owner: context.payload.pull_request.base.repo.owner.login,
+              repo: context.payload.pull_request.base.repo.name,
+            };
+
             // Find existing comment
             const { data: comments } = await github.rest.issues.listComments({
-              ...context.repo,
-              issue_number: context.issue.number
+              ...prRepo,
+              issue_number: context.payload.pull_request.number
             });
 
             const flashComment = comments.find(comment =>
@@ -151,14 +157,14 @@ jobs:
 
             if (flashComment) {
               await github.rest.issues.updateComment({
-                ...context.repo,
+                ...prRepo,
                 comment_id: flashComment.id,
                 body: body
               });
             } else {
               await github.rest.issues.createComment({
-                ...context.repo,
-                issue_number: context.issue.number,
+                ...prRepo,
+                issue_number: context.payload.pull_request.number,
                 body: body
               });
             }
