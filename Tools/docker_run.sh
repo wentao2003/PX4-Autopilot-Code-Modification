@@ -2,21 +2,33 @@
 
 if [ -z ${PX4_DOCKER_REPO+x} ]; then
 	echo "guessing PX4_DOCKER_REPO based on input";
-	if [[ $@ =~ .*clang.* ]] || [[ $@ =~ .*scan-build.* ]]; then
+	if [[ $@ =~ .*px4_fmu.* ]]; then
+		# nuttx-px4fmu-v{1,2,3,4,5}
+		PX4_DOCKER_REPO="px4io/px4-dev-nuttx-focal:2022-08-12"
+	elif [[ $@ =~ .*navio2.* ]] || [[ $@ =~ .*raspberry.* ]] || [[ $@ =~ .*beaglebone.* ]] || [[ $@ =~ .*pilotpi.default ]]; then
+		# beaglebone_blue_default, emlid_navio2_default, px4_raspberrypi_default, scumaker_pilotpi_default
+		PX4_DOCKER_REPO="px4io/px4-dev-armhf:2023-06-26"
+	elif [[ $@ =~ .*pilotpi.arm64 ]]; then
+		# scumaker_pilotpi_arm64
+		PX4_DOCKER_REPO="px4io/px4-dev-aarch64:2022-08-12"
+	elif [[ $@ =~ .*navio2.* ]] || [[ $@ =~ .*raspberry.* ]] || [[ $@ =~ .*bebop.* ]]; then
+		# posix_rpi_cross, posix_bebop_default
+		PX4_DOCKER_REPO="px4io/px4-dev-armhf:2023-06-26"
+	elif [[ $@ =~ .*clang.* ]] || [[ $@ =~ .*scan-build.* ]]; then
 		# clang tools
-		PX4_DOCKER_REPO="px4io/px4-dev-clang:2024-05-18"
+		PX4_DOCKER_REPO="px4io/px4-dev-clang:2021-02-04"
 	elif [[ $@ =~ .*tests* ]]; then
 		# run all tests with simulation
-		PX4_DOCKER_REPO="px4io/px4-dev-simulation-bionic:2024-05-18"
+		PX4_DOCKER_REPO="px4io/px4-dev-simulation-bionic:2021-12-11"
 	fi
+else
+	echo "PX4_DOCKER_REPO is set to '$PX4_DOCKER_REPO'";
 fi
 
 # otherwise default to nuttx
 if [ -z ${PX4_DOCKER_REPO+x} ]; then
-	PX4_DOCKER_REPO="ghcr.io/px4/px4-dev:v1.16.0-alpha2-419-gd48631e2ce"
+	PX4_DOCKER_REPO="px4io/px4-dev-nuttx-focal:2022-08-12"
 fi
-
-echo "PX4_DOCKER_REPO is set to '$PX4_DOCKER_REPO'";
 
 # docker hygiene
 
