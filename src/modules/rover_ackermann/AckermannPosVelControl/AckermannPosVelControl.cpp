@@ -262,15 +262,21 @@ void AckermannPosVelControl::autoPositionMode()
 	const float distance_to_curr_wp = sqrt(powf(_curr_pos_ned(0) - _curr_wp_ned(0),
 					       2) + powf(_curr_pos_ned(1) - _curr_wp_ned(1), 2));
 
-	if (_nav_state == vehicle_status_s::NAVIGATION_STATE_AUTO_RTL) { // Check RTL arrival
+	if (_nav_state == vehicle_status_s::NAVIGATION_STATE_AUTO_RTL
+	    || _curr_wp_type == position_setpoint_s::SETPOINT_TYPE_LAND
+	    || _curr_wp_type == position_setpoint_s::SETPOINT_TYPE_IDLE
+	    || !_next_wp_ned.isAllFinite()) { // Check stopping conditions
 		_mission_finished = distance_to_curr_wp < _param_nav_acc_rad.get();
 	}
 
 	if (_mission_finished) {
 		_speed_body_x_setpoint = 0.f;
+		rover_rate_setpoint_s rover_rate_setpoint{};
+		rover_rate_setpoint.timestamp = _timestamp;
+		rover_rate_setpoint.yaw_rate_setpoint = 0.f;
+		_rover_rate_setpoint_pub.publish(rover_rate_setpoint);
 
 	} else { // Regular guidance algorithm
-
 		_speed_body_x_setpoint = calcSpeedSetpoint(_cruising_speed, _min_speed, distance_to_prev_wp, distance_to_curr_wp,
 					 _acceptance_radius, _prev_acceptance_radius, _param_ro_decel_limit.get(), _param_ro_jerk_limit.get(), _nav_state,
 					 _waypoint_transition_angle, _prev_waypoint_transition_angle, _param_ro_speed_limit.get());
@@ -284,6 +290,7 @@ void AckermannPosVelControl::autoPositionMode()
 		rover_attitude_setpoint.timestamp = _timestamp;
 		rover_attitude_setpoint.yaw_setpoint = yaw_setpoint;
 		_rover_attitude_setpoint_pub.publish(rover_attitude_setpoint);
+
 	}
 }
 
@@ -310,6 +317,7 @@ void AckermannPosVelControl::updateWaypointsAndAcceptanceRadius()
 {
 	position_setpoint_triplet_s position_setpoint_triplet{};
 	_position_setpoint_triplet_sub.copy(&position_setpoint_triplet);
+	_curr_wp_type = position_setpoint_triplet.current.type;
 
 	RoverControl::globalToLocalSetpointTriplet(_curr_wp_ned, _prev_wp_ned, _next_wp_ned, position_setpoint_triplet,
 			_curr_pos_ned, _home_position, _global_ned_proj_ref);
@@ -339,13 +347,16 @@ float AckermannPosVelControl::updateAcceptanceRadius(const float waypoint_transi
 {
 	// Calculate acceptance radius s.t. the rover cuts the corner tangential to the current and next line segment
 	float acceptance_radius = default_acceptance_radius;
-	const float theta = waypoint_transition_angle / 2.f;
-	const float min_turning_radius = wheel_base / sinf(max_steer_angle);
-	const float acceptance_radius_temp = min_turning_radius / tanf(theta);
-	const float acceptance_radius_temp_scaled = acceptance_radius_gain *
-			acceptance_radius_temp; // Scale geometric ideal acceptance radius to account for kinematic and dynamic effects
-	acceptance_radius = math::constrain<float>(acceptance_radius_temp_scaled, default_acceptance_radius,
-			    acceptance_radius_max);
+
+	if (PX4_ISFINITE(_waypoint_transition_angle)) {
+		const float theta = waypoint_transition_angle / 2.f;
+		const float min_turning_radius = wheel_base / sinf(max_steer_angle);
+		const float acceptance_radius_temp = min_turning_radius / tanf(theta);
+		const float acceptance_radius_temp_scaled = acceptance_radius_gain *
+				acceptance_radius_temp; // Scale geometric ideal acceptance radius to account for kinematic and dynamic effects
+		acceptance_radius = math::constrain<float>(acceptance_radius_temp_scaled, default_acceptance_radius,
+				    acceptance_radius_max);
+	}
 
 	// Publish updated acceptance radius
 	position_controller_status_s pos_ctrl_status{};
@@ -366,12 +377,12 @@ float AckermannPosVelControl::calcSpeedSetpoint(const float cruising_speed, cons
 	}
 
 	// Cornering slow down effect
-	if (distance_to_prev_wp <= prev_acc_rad && prev_acc_rad > FLT_EPSILON) {
+	if (distance_to_prev_wp <= prev_acc_rad && prev_acc_rad > FLT_EPSILON && PX4_ISFINITE(prev_waypoint_transition_angle)) {
 		const float turning_circle = prev_acc_rad * tanf(prev_waypoint_transition_angle / 2.f);
 		const float cornering_speed = _max_yaw_rate * turning_circle;
 		return math::constrain(cornering_speed, miss_speed_min, cruising_speed);
 
-	} else if (distance_to_curr_wp <= acc_rad && acc_rad > FLT_EPSILON) {
+	} else if (distance_to_curr_wp <= acc_rad && acc_rad > FLT_EPSILON && PX4_ISFINITE(waypoint_transition_angle)) {
 		const float turning_circle = acc_rad * tanf(waypoint_transition_angle / 2.f);
 		const float cornering_speed = _max_yaw_rate * turning_circle;
 		return math::constrain(cornering_speed, miss_speed_min, cruising_speed);
@@ -382,7 +393,8 @@ float AckermannPosVelControl::calcSpeedSetpoint(const float cruising_speed, cons
 	if (max_decel > FLT_EPSILON && max_jerk > FLT_EPSILON && acc_rad > FLT_EPSILON) {
 		float straight_line_speed{0.f};
 
-		if (nav_state == vehicle_status_s::NAVIGATION_STATE_AUTO_RTL) {
+		if (nav_state == vehicle_status_s::NAVIGATION_STATE_AUTO_RTL || !PX4_ISFINITE(waypoint_transition_angle)) {
+
 			straight_line_speed = math::trajectory::computeMaxSpeedFromDistance(max_jerk,
 					      max_decel, distance_to_curr_wp, 0.f);
 

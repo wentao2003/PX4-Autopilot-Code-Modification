@@ -241,8 +241,7 @@ void globalToLocalSetpointTriplet(Vector2f &curr_wp_ned, Vector2f &prev_wp_ned, 
 		next_wp_ned = global_ned_proj_ref.project(position_setpoint_triplet.next.lat, position_setpoint_triplet.next.lon);
 
 	} else {
-		next_wp_ned = home_pos.isAllFinite() ? global_ned_proj_ref.project(home_pos(0), home_pos(1)) : Vector2f(NAN,
-				NAN); // Enables corner slow down with RTL
+		next_wp_ned = Vector2f(NAN, NAN);
 	}
 }
 

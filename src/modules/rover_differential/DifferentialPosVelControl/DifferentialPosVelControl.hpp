@@ -59,6 +59,7 @@
 #include <uORB/topics/trajectory_setpoint.h>
 #include <uORB/topics/vehicle_attitude.h>
 #include <uORB/topics/offboard_control_mode.h>
+#include <uORB/topics/position_setpoint.h>
 #include <uORB/topics/position_setpoint_triplet.h>
 #include <uORB/topics/vehicle_local_position.h>
 #include <uORB/topics/vehicle_status.h>
@@ -202,6 +203,7 @@ private:
 	float _speed_body_x_setpoint{0.f};
 	float _dt{0.f};
 	int _nav_state{0};
+	int _curr_wp_type{position_setpoint_s::SETPOINT_TYPE_IDLE};
 	bool _course_control{false}; // Indicates if the rover is doing course control in manual position mode.
 	bool _mission_finished{false};
 
