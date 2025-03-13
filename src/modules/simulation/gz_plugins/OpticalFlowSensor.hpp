@@ -1,20 +1,20 @@
 /****************************************************************************
  *
- *   Copyright (c) 2022 PX4 Development Team. All rights reserved.
+ *   Copyright (c) 2025 PX4 Development Team. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
  *
  * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
+ *	notice, this list of conditions and the following disclaimer.
  * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
+ *	notice, this list of conditions and the following disclaimer in
+ *	the documentation and/or other materials provided with the
+ *	distribution.
  * 3. Neither the name PX4 nor the names of its contributors may be
- *    used to endorse or promote products derived from this software
- *    without specific prior written permission.
+ *	used to endorse or promote products derived from this software
+ *	without specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
  * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
@@ -33,28 +33,43 @@
 
 #pragma once
 
-#include "../Common.hpp"
+#include <gz/sensors/Sensor.hh>
+#include <gz/sensors/CameraSensor.hh>
+#include <gz/sensors/SensorTypes.hh>
+#include <gz/transport/Node.hh>
+#include <gz/msgs/image.pb.h>
+#include <opencv2/opencv.hpp>
+#include <numeric>
+#include <vector>
+#include <memory>
 
-#include <lib/hysteresis/hysteresis.h>
-#include <uORB/Subscription.hpp>
-#include <uORB/topics/system_power.h>
+#include "flow_opencv.hpp"
 
-class PowerChecks : public HealthAndArmingCheckBase
+namespace custom
+{
+class OpticalFlowSensor : public gz::sensors::Sensor
 {
 public:
-	PowerChecks();
-	~PowerChecks() = default;
-
-	void checkAndReport(const Context &context, Report &reporter) override;
+	virtual bool Load(const sdf::Sensor &_sdf) override;
+	virtual bool Update(const std::chrono::steady_clock::duration &_now) override;
 
 private:
-	uORB::Subscription _system_power_sub{ORB_ID(system_power)};
-	bool _overcurrent_warning_sent{false};
-	systemlib::Hysteresis _voltage_low_hysteresis{false};
-	systemlib::Hysteresis _voltage_high_hysteresis{false};
+	void OnImage(const gz::msgs::Image &_msg);
 
-	DEFINE_PARAMETERS_CUSTOM_PARENT(HealthAndArmingCheckBase,
-					(ParamInt<px4::params::CBRK_SUPPLY_CHK>) _param_cbrk_supply_chk,
-					(ParamInt<px4::params::COM_POWER_COUNT>) _param_com_power_count
-				       )
+	gz::transport::Node _node;
+	gz::transport::Node::Publisher _publisher;
+
+	// Flow
+	std::shared_ptr<OpticalFlowOpenCV> _optical_flow {nullptr};
+	int _integration_time_us;
+
+	// Camera
+	double _horizontal_fov {0.0};
+	double _vertical_fov {0.0};
+
+	cv::Mat _last_image_gray;
+	uint32_t _last_image_timestamp {0};
+	bool _new_image_available {false};
 };
+
+} // end namespace custom
