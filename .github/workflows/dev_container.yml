@@ -82,12 +82,6 @@ jobs:
         with:
           version: v0.20.1
 
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-        if: matrix.platform == 'x64'
-        with:
-          platforms: ${{ env.PLATFORM_NAME }}
-
       - name: Build and Load Container Image
         uses: docker/build-push-action@v6
         id: docker
