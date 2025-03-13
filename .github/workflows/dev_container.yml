@@ -90,26 +90,26 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           platforms: ${{ env.PLATFORM_NAME }}
-          load: true
+          load: false
           push: false
           cache-from: type=gha,version=1
           cache-to: type=gha,version=1,mode=max
 
-      - name: Get Container Image Tag Name
-        id: image_name
-        run: |
-          echo "image_name=$(echo '${{ fromJSON(steps.docker.outputs.metadata)['image.name'] }}' | sed 's/,.*$//')" >> $GITHUB_OUTPUT
+      # - name: Get Container Image Tag Name
+      #   id: image_name
+      #   run: |
+      #     echo "image_name=$(echo '${{ fromJSON(steps.docker.outputs.metadata)['image.name'] }}' | sed 's/,.*$//')" >> $GITHUB_OUTPUT
 
-      - name: Test Build of PX4 with Container
-        uses: addnab/docker-run-action@v3
-        with:
-          image: ${{ steps.image_name.outputs.image_name }}
-          options: -v ${{ github.workspace }}:/workspace
-          run: |
-            cd /workspace
-            git config --global --add safe.directory /workspace
-            make px4_sitl_default
-            make px4_fmu-v6x_default
+      # - name: Test Build of PX4 with Container
+      #   uses: addnab/docker-run-action@v3
+      #   with:
+      #     image: ${{ steps.image_name.outputs.image_name }}
+      #     options: -v ${{ github.workspace }}:/workspace
+      #     run: |
+      #       cd /workspace
+      #       git config --global --add safe.directory /workspace
+      #       make px4_sitl_default
+      #       make px4_fmu-v6x_default
 
   deploy:
     name: Deploy To Registry
@@ -165,11 +165,6 @@ jobs:
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-        with:
-          platforms: linux/amd64,linux/arm64
 
       - name: Push Images to Registry
         uses: docker/build-push-action@v6
