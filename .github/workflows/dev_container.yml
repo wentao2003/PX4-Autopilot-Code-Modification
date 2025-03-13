@@ -31,7 +31,7 @@ jobs:
       matrix:
         platform:
           - arm64
-          # - x64
+          - x64
     runs-on: [runs-on,"runner=8cpu-linux-${{ matrix.platform }}","image=ubuntu24-full-${{ matrix.platform }}","run-id=${{ github.run_id }}",spot=false,extras=s3-cache]
     env:
       PLATFORM_NAME: ${{ matrix.platform == 'arm64' && 'linux/arm64' || 'linux/amd64' }}
@@ -59,7 +59,7 @@ jobs:
             type=raw,enable=true,value=${{ steps.px4_version.outputs.px4_version }},priority=1000
 
       - name: Cache Apt Registry
-        uses: actions/cache@v3
+        uses: runs-on/cache@v4
         id: cache
         with:
           path: |
@@ -84,6 +84,7 @@ jobs:
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
+        if: matrix.platform == 'x64'
         with:
           platforms: ${{ env.PLATFORM_NAME }}
 
@@ -185,5 +186,9 @@ jobs:
           platforms: linux/amd64,linux/arm64
           load: false
           push: ${{ startsWith(github.ref, 'refs/tags/') }}
-          cache-from: type=gha,scope=build-arm64
-          cache-to: type=gha,mode=max,scope=build-arm64
+          cache-from: |
+            type=gha,scope=build-arm64
+            type=gha,scope=build-x64
+          cache-to: |
+            type=gha,mode=max,scope=build-arm64
+            type=gha,mode=max,scope=build-x64
