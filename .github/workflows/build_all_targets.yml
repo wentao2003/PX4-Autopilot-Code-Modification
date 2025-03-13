@@ -17,12 +17,14 @@ on:
     paths-ignore:
       - 'docs/**'
       - '.github/**'
+      - 'Tools/**'
   pull_request:
     branches:
       - '*'
     paths-ignore:
       - 'docs/**'
       - '.github/**'
+      - 'Tools/**'
 
 jobs:
   group_targets:
