@@ -74,6 +74,21 @@ jobs:
           submodules: false
           fetch-depth: 0
 
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        if: ${{ startsWith(github.ref, 'refs/tags/') }}
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        if: ${{ startsWith(github.ref, 'refs/tags/') }}
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
         with:
@@ -88,7 +103,7 @@ jobs:
           labels: ${{ needs.setup.outputs.meta_labels }}
           platforms: ${{ env.PLATFORM_NAME }}
           load: false
-          push: false
+          push: true
           cache-from: type=gha,version=1
           cache-to: type=gha,version=1,mode=max
 
@@ -114,26 +129,6 @@ jobs:
     # if: ${{ startsWith(github.ref, 'refs/tags/') }}
     steps:
       - uses: runs-on/action@v1
-      - uses: actions/checkout@v4
-        with:
-          fetch-tags: true
-          submodules: false
-          fetch-depth: 0
-
-      - name: Set PX4 Tag Version
-        id: px4_version
-        run: |
-          echo "px4_version=$(git describe --tags --match 'v[0-9]*')" >> $GITHUB_OUTPUT
-
-      - name: Extract metadata (tags, labels) for Docker
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: |
-            ghcr.io/PX4/px4-dev
-            px4io/px4-dev
-          tags: |
-            type=raw,enable=true,value=${{ needs.setup.outputs.px4_version }},priority=1000
 
       - name: Login to Docker Hub
         uses: docker/login-action@v3
@@ -150,18 +145,6 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Cache Apt Registry
-        uses: runs-on/cache@v4
-        id: cache
-        with:
-          path: |
-            var-cache-apt
-            var-lib-apt
-          key: cache-${{ hashFiles('Tools/setup/Dockerfile') }}
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
       - name: Push Images to Registry
         uses: docker/build-push-action@v6
         with:
@@ -170,6 +153,6 @@ jobs:
           labels: ${{ needs.setup.outputs.meta_labels }}
           platforms: linux/amd64,linux/arm64
           load: false
-          push: ${{ startsWith(github.ref, 'refs/tags/') }}
+          push: true
           cache-from: type=gha,version=1
           cache-to: type=gha,version=1,mode=max
