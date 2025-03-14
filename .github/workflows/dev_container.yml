@@ -154,5 +154,3 @@ jobs:
           platforms: linux/amd64,linux/arm64
           load: false
           push: true
-          cache-from: type=gha,version=1
-          cache-to: type=gha,version=1,mode=max
