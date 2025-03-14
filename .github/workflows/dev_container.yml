@@ -150,6 +150,11 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          version: v0.20.1
+
       - name: Push Images to Registry
         uses: docker/build-push-action@v6
         with:
