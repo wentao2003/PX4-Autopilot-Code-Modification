@@ -148,7 +148,6 @@ jobs:
       - name: Push Images to Registry
         uses: docker/build-push-action@v6
         with:
-          context: Tools/setup
           tags: ${{ needs.setup.outputs.meta_tags }}
           labels: ${{ needs.setup.outputs.meta_labels }}
           platforms: linux/amd64,linux/arm64
