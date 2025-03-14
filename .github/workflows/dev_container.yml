@@ -34,7 +34,7 @@ jobs:
       meta_labels: ${{ steps.meta.outputs.labels }}
     steps:
       - uses: runs-on/action@v1
-      - uses: actions/checkou@v4
+      - uses: actions/checkout@v4
         with:
           fetch-tags: true
           submodules: false
