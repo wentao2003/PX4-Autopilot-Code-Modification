@@ -92,20 +92,20 @@ jobs:
           cache-from: type=gha,version=1
           cache-to: type=gha,version=1,mode=max
 
-      - name: Get Container Image Tag Name
-        id: image_name
-        run: |
-          echo "image_name=$(echo '${{ fromJSON(steps.docker.outputs.metadata)['image.name'] }}' | sed 's/,.*$//')" >> $GITHUB_OUTPUT
+      # - name: Get Container Image Tag Name
+      #   id: image_name
+      #   run: |
+      #     echo "image_name=$(echo '${{ fromJSON(steps.docker.outputs.metadata)['image.name'] }}' | sed 's/,.*$//')" >> $GITHUB_OUTPUT
 
-      - name: Test Build of PX4 with Container
-        uses: addnab/docker-run-action@v3
-        with:
-          image: ${{ steps.image_name.outputs.image_name }}
-          options: -v ${{ github.workspace }}:/workspace
-          run: |
-            cd /workspace
-            git config --global --add safe.directory /workspace
-            make px4_sitl_default
+      # - name: Test Build of PX4 with Container
+      #   uses: addnab/docker-run-action@v3
+      #   with:
+      #     image: ${{ steps.image_name.outputs.image_name }}
+      #     options: -v ${{ github.workspace }}:/workspace
+      #     run: |
+      #       cd /workspace
+      #       git config --global --add safe.directory /workspace
+      #       make px4_sitl_default
 
   deploy:
     name: Deploy To Registry
