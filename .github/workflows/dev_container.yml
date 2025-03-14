@@ -153,14 +153,35 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
         with:
-          version: v0.20.1
+          driver: docker-container
 
-      - name: Push Images to Registry
-        uses: docker/build-push-action@v6
-        with:
-          context: Tools/setup
-          tags: ${{ needs.setup.outputs.meta_tags }}
-          labels: ${{ needs.setup.outputs.meta_labels }}
-          platforms: linux/amd64,linux/arm64
-          load: false
-          push: true
+      - name: Verify Images Exist Before Creating Manifest
+        run: |
+          docker manifest inspect px4io/px4-dev:${{ needs.setup.outputs.px4_version }} || echo "⚠️ Warning: No AMD64/ARM64 image found!"
+          docker manifest inspect ghcr.io/PX4/px4-dev:${{ needs.setup.outputs.px4_version }} || echo "⚠️ Warning: No AMD64/ARM64 image found!"
+
+      - name: Create and Push Multi-Arch Manifest for Docker Hub
+        run: |
+          docker manifest create px4io/px4-dev:${{ needs.setup.outputs.px4_version }} \
+            --amend px4io/px4-dev:${{ needs.setup.outputs.px4_version }}@$(docker manifest inspect --format '{{ (index .Manifests 0).Digest }}' px4io/px4-dev:${{ needs.setup.outputs.px4_version }}) \
+            --amend px4io/px4-dev:${{ needs.setup.outputs.px4_version }}@$(docker manifest inspect --format '{{ (index .Manifests 1).Digest }}' px4io/px4-dev:${{ needs.setup.outputs.px4_version }})
+
+          docker manifest push px4io/px4-dev:${{ needs.setup.outputs.px4_version }}
+
+      - name: Create and Push Multi-Arch Manifest for GHCR
+        run: |
+          docker manifest create ghcr.io/PX4/px4-dev:${{ needs.setup.outputs.px4_version }} \
+            --amend ghcr.io/PX4/px4-dev:${{ needs.setup.outputs.px4_version }}@$(docker manifest inspect --format '{{ (index .Manifests 0).Digest }}' ghcr.io/PX4/px4-dev:${{ needs.setup.outputs.px4_version }}) \
+            --amend ghcr.io/PX4/px4-dev:${{ needs.setup.outputs.px4_version }}@$(docker manifest inspect --format '{{ (index .Manifests 1).Digest }}' ghcr.io/PX4/px4-dev:${{ needs.setup.outputs.px4_version }})
+
+          docker manifest push ghcr.io/PX4/px4-dev:${{ needs.setup.outputs.px4_version }}
+
+      # - name: Push Images to Registry
+      #   uses: docker/build-push-action@v6
+      #   with:
+      #     context: Tools/setup
+      #     tags: ${{ needs.setup.outputs.meta_tags }}
+      #     labels: ${{ needs.setup.outputs.meta_labels }}
+      #     platforms: linux/amd64,linux/arm64
+      #     load: false
+      #     push: true
