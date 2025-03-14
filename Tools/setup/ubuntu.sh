@@ -28,10 +28,10 @@ do
 done
 
 echo "[ubuntu.sh] Starting..."
-echo "[ubuntu.sh] arch: ${GREEN}$INSTALL_ARCH${NC}"
+echo "[ubuntu.sh] arch: $INSTALL_ARCH"
 
 # detect if running in docker
-if [ -f /.dockerenv ]; then
+if [ -z "$RUNS_IN_DOCKER" ]; then
 	echo "[ubuntu.sh] Running within docker, installing initial dependencies";
 	apt-get --quiet -y update && DEBIAN_FRONTEND=noninteractive apt-get --quiet -y install \
 		ca-certificates \
@@ -58,7 +58,7 @@ fi
 # check ubuntu version
 # otherwise warn and point to docker?
 UBUNTU_RELEASE="`lsb_release -rs`"
-echo "[ubuntu.sh] Ubuntu ${GREEN}${UBUNTU_RELEASE}${NC}"
+echo "[ubuntu.sh] Ubuntu ${UBUNTU_RELEASE}"
 echo "[ubuntu.sh] Installing PX4 general dependencies"
 
 sudo apt-get update -y --quiet
