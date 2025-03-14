@@ -25,19 +25,16 @@ on:
       - 'Tools/setup/docker-entrypoint.sh'
 
 jobs:
-  build:
-    name: Build and Push Container
-    strategy:
-      matrix:
-        platform:
-          - arm64
-          - x64
-    runs-on: [runs-on,"runner=8cpu-linux-${{ matrix.platform }}","image=ubuntu24-full-${{ matrix.platform }}","run-id=${{ github.run_id }}",spot=false,extras=s3-cache]
-    env:
-      PLATFORM_NAME: ${{ matrix.platform == 'arm64' && 'linux/arm64' || 'linux/amd64' }}
+  setup:
+    name: Set Tags and Variables
+    runs-on: [runs-on,"runner=1cpu-linux-x64","image=ubuntu24-full-x64","run-id=${{ github.run_id }}",spot=false,extras=s3-cache]
+    outputs:
+      px4_version: ${{ steps.px4_version.outputs.px4_version }}
+      meta_tags: ${{ steps.meta.outputs.tags }}
+      meta_labels: ${{ steps.meta.outputs.labels }}
     steps:
       - uses: runs-on/action@v1
-      - uses: actions/checkout@v4
+      - uses: actions/checkou@v4
         with:
           fetch-tags: true
           submodules: false
@@ -58,24 +55,24 @@ jobs:
           tags: |
             type=raw,enable=true,value=${{ steps.px4_version.outputs.px4_version }},priority=1000
 
-      - name: Cache Apt Registry
-        uses: runs-on/cache@v4
-        id: cache
+  build:
+    name: Build and Push Container
+    needs: setup
+    strategy:
+      matrix:
+        platform:
+          - arm64
+          - x64
+    runs-on: [runs-on,"runner=8cpu-linux-${{ matrix.platform }}","image=ubuntu24-full-${{ matrix.platform }}","run-id=${{ github.run_id }}",spot=false,extras=s3-cache]
+    env:
+      PLATFORM_NAME: ${{ matrix.platform == 'arm64' && 'linux/arm64' || 'linux/amd64' }}
+    steps:
+      - uses: runs-on/action@v1
+      - uses: actions/checkout@v4
         with:
-          path: |
-            var-cache-apt
-            var-lib-apt
-          key: cache-${{ hashFiles('Tools/setup/Dockerfile') }}
-
-      - name: Inject Cache into Docker
-        uses: reproducible-containers/buildkit-cache-dance@v3.1.0
-        with:
-          cache-map: |
-            {
-              "var-cache-apt": "/var/cache/apt",
-              "var-lib-apt": "/var/lib/apt"
-            }
-          skip-extraction: ${{ steps.cache.outputs.cache-hit }}
+          fetch-tags: true
+          submodules: false
+          fetch-depth: 0
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -87,34 +84,33 @@ jobs:
         id: docker
         with:
           context: Tools/setup
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          tags: ${{ needs.setup.outputs.meta_tags }}
+          labels: ${{ needs.setup.outputs.meta_labels }}
           platforms: ${{ env.PLATFORM_NAME }}
           load: false
           push: false
           cache-from: type=gha,version=1
           cache-to: type=gha,version=1,mode=max
 
-      # - name: Get Container Image Tag Name
-      #   id: image_name
-      #   run: |
-      #     echo "image_name=$(echo '${{ fromJSON(steps.docker.outputs.metadata)['image.name'] }}' | sed 's/,.*$//')" >> $GITHUB_OUTPUT
+      - name: Get Container Image Tag Name
+        id: image_name
+        run: |
+          echo "image_name=$(echo '${{ fromJSON(steps.docker.outputs.metadata)['image.name'] }}' | sed 's/,.*$//')" >> $GITHUB_OUTPUT
 
-      # - name: Test Build of PX4 with Container
-      #   uses: addnab/docker-run-action@v3
-      #   with:
-      #     image: ${{ steps.image_name.outputs.image_name }}
-      #     options: -v ${{ github.workspace }}:/workspace
-      #     run: |
-      #       cd /workspace
-      #       git config --global --add safe.directory /workspace
-      #       make px4_sitl_default
-      #       make px4_fmu-v6x_default
+      - name: Test Build of PX4 with Container
+        uses: addnab/docker-run-action@v3
+        with:
+          image: ${{ steps.image_name.outputs.image_name }}
+          options: -v ${{ github.workspace }}:/workspace
+          run: |
+            cd /workspace
+            git config --global --add safe.directory /workspace
+            make px4_sitl_default
 
   deploy:
     name: Deploy To Registry
     runs-on: [runs-on,"runner=8cpu-linux-x64","image=ubuntu24-full-x64","run-id=${{ github.run_id }}",spot=false,extras=s3-cache]
-    needs: build
+    needs: [build, setup]
     # if: ${{ startsWith(github.ref, 'refs/tags/') }}
     steps:
       - uses: runs-on/action@v1
@@ -137,7 +133,7 @@ jobs:
             ghcr.io/PX4/px4-dev
             px4io/px4-dev
           tags: |
-            type=raw,enable=true,value=${{ steps.px4_version.outputs.px4_version }},priority=1000
+            type=raw,enable=true,value=${{ needs.setup.outputs.px4_version }},priority=1000
 
       - name: Login to Docker Hub
         uses: docker/login-action@v3
@@ -170,8 +166,8 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: Tools/setup
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          tags: ${{ needs.setup.outputs.meta_tags }}
+          labels: ${{ needs.setup.outputs.meta_labels }}
           platforms: linux/amd64,linux/arm64
           load: false
           push: ${{ startsWith(github.ref, 'refs/tags/') }}
