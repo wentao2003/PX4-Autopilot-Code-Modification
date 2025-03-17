@@ -711,6 +711,7 @@ void AirspeedModule::select_airspeed_and_publish()
 	airspeed_validated_s airspeed_validated = {};
 	airspeed_validated.timestamp = _time_now_usec;
 	airspeed_validated.calibrated_ground_minus_wind_m_s = NAN;
+	airspeed_validated.calibraded_airspeed_synth_m_s = NAN;
 	airspeed_validated.indicated_airspeed_m_s = NAN;
 	airspeed_validated.calibrated_airspeed_m_s = NAN;
 	airspeed_validated.true_airspeed_m_s = NAN;
@@ -736,7 +737,7 @@ void AirspeedModule::select_airspeed_and_publish()
 		break;
 
 	case AirspeedSource::SYNTHETIC: {
-			// todo: double check this
+			// get throttle value from the first airspeed sensor
 			airspeed_validated.throttle_filtered = _airspeed_validator[0].get_throttle_filtered();
 			airspeed_validated.pitch_filtered = _airspeed_validator[0].get_pitch_filtered();
 
@@ -759,6 +760,8 @@ void AirspeedModule::select_airspeed_and_publish()
 			}
 
 			airspeed_validated.calibrated_airspeed_m_s = synthetic_airspeed;
+			airspeed_validated.indicated_airspeed_m_s = synthetic_airspeed;
+			airspeed_validated.calibraded_airspeed_synth_m_s = synthetic_airspeed;
 			airspeed_validated.true_airspeed_m_s =
 				calc_true_from_calibrated_airspeed(synthetic_airspeed, _vehicle_air_data.rho);
 			break;
