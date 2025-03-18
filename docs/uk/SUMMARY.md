@@ -13,7 +13,7 @@
       - [Acro Mode (MC)](flight_modes_mc/acro.md)
       - [Orbit Mode (MC)](flight_modes_mc/orbit.md)
       - [Takeoff Mode (MC)](flight_modes_mc/takeoff.md)
-      - [Land Mode (MC)](flight_modes_mc/land.md)
+      - [Land Mode (MC)](flight_modes_mc/land.md)s
       - [Hold Mode (MC)](flight_modes_mc/hold.md)
       - [Follow Me Mode (MC)](flight_modes_mc/follow_me.md)
       - [Mission Mode (MC)](flight_modes_mc/mission.md)

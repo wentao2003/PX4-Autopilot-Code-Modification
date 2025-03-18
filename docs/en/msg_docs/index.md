@@ -278,5 +278,3 @@ NaN means the state was not controlled
 - [Wind](Wind.md)
 - [YawEstimatorStatus](YawEstimatorStatus.md)
 - [VehicleStatusV0](VehicleStatusV0.md) — Encodes the system state of the vehicle published by commander
-
-    
