@@ -2066,10 +2066,10 @@ void EKF2::UpdateAirspeedSample(ekf2_timestamps_s &ekf2_timestamps)
 		if (_airspeed_validated_sub.update(&airspeed_validated)) {
 
 			if (PX4_ISFINITE(airspeed_validated.true_airspeed_m_s)
-			    && (airspeed_validated.airspeed_source > 0)
+			    && (airspeed_validated.airspeed_source > airspeed_validated_s::GROUND_MINUS_WIND)
 			   ) {
 
-				_ekf.SetSyntheticAirSpeed(airspeed_validated.airspeed_source == 4);
+				_ekf.setSyntheticAirspeed(airspeed_validated.airspeed_source == airspeed_validated_s::SYNTHETIC);
 
 				float cas2tas = 1.f;
 

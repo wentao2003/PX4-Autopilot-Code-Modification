@@ -105,7 +105,7 @@ public:
 
 #if defined(CONFIG_EKF2_AIRSPEED)
 	void setAirspeedData(const airspeedSample &airspeed_sample);
-	void SetSyntheticAirSpeed(const bool synthetic_airspeed) { _synthetic_airspeed = synthetic_airspeed; }
+	void setSyntheticAirspeed(const bool synthetic_airspeed) { _synthetic_airspeed = synthetic_airspeed; }
 #endif // CONFIG_EKF2_AIRSPEED
 
 #if defined(CONFIG_EKF2_RANGE_FINDER)

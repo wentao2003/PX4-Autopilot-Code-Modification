@@ -299,7 +299,7 @@ AirspeedValidator::check_first_principle(const uint64_t timestamp, const float t
 		return;
 	}
 
-	const float dt = static_cast<float>(timestamp - _time_last_first_principle_check) / 1_s;
+	const float dt = static_cast<float>(timestamp - _time_last_first_principle_check) * 1e-6f;
 	_time_last_first_principle_check = timestamp;
 
 	// update filters
@@ -374,14 +374,13 @@ AirspeedValidator::update_airspeed_valid_status(const uint64_t timestamp)
 void
 AirspeedValidator::update_throttle_filter(uint64_t timestamp, float throttle_fw)
 {
-	const float dt = static_cast<float>(timestamp - _t_last_throttle_fw) / 1_s;
+	const float dt = static_cast<float>(timestamp - _t_last_throttle_fw) * 1e-6f;
 	_t_last_throttle_fw = timestamp;
 
 	if (dt < FLT_EPSILON || dt > 1.f) {
 		_throttle_filtered.reset(throttle_fw);
 
 	} else {
-		_throttle_filtered.setParameters(dt, 0.5f);
-		_throttle_filtered.update(throttle_fw);
+		_throttle_filtered.update(throttle_fw, dt);
 	}
 }
