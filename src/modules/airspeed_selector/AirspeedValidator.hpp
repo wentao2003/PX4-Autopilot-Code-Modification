@@ -181,8 +181,8 @@ private:
 	bool _first_principle_check_failed{false}; ///< first principle check has detected failure
 	float _aspd_fp_t_window{0.f}; ///< time window for first principle check
 	FilteredDerivative<float> _IAS_derivative; ///< indicated airspeed derivative for first principle check
-	static constexpr float throttle_filter_time_constant{0.5f};
-	AlphaFilter<float> _throttle_filtered{throttle_filter_time_constant};
+	static constexpr float _kThrottleFilterTimeConstant{0.5f};
+	AlphaFilter<float> _throttle_filtered{_kThrottleFilterTimeConstant};
 	AlphaFilter<float> _pitch_filtered; ///< filtered pitch for first principle check
 	uint64_t _t_last_throttle_fw{0};
 	hrt_abstime _time_last_first_principle_check{0}; ///< time airspeed first principle was last checked (uSec)

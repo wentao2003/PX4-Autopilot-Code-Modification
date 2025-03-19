@@ -149,8 +149,8 @@ private:
 
 	matrix::Quatf _q_att;
 	hrt_abstime _time_now_usec{0};
-	AirspeedSource _valid_airspeed_src{AirspeedSource::DISABLED}; /**< currently chosen (valid) airspeed sensor */
-	AirspeedSource _prev_airspeed_index{AirspeedSource::DISABLED}; /**< previously chosen airspeed sensor */
+	AirspeedSource _valid_airspeed_src{AirspeedSource::DISABLED};
+	AirspeedSource _prev_airspeed_src{AirspeedSource::DISABLED};
 	bool _initialized{false}; /**< module initialized*/
 	bool _gnss_lpos_valid{false}; /**< local position (from GNSS) valid */
 	bool _in_takeoff_situation{true}; /**< in takeoff situation (defined as not yet stall speed reached) */
@@ -289,7 +289,7 @@ AirspeedModule::init()
 		_valid_airspeed_src = static_cast<AirspeedSource>(_param_airspeed_primary_index.get());
 	}
 
-	_prev_airspeed_index = _valid_airspeed_src; // used to detect a sensor switching
+	_prev_airspeed_src = _valid_airspeed_src;
 }
 
 void
@@ -625,10 +625,10 @@ void AirspeedModule::select_airspeed_and_publish()
 
 	// we need to re-evaluate the sensors if we're currently not on a phyisical sensor or the current sensor got invalid
 	bool airspeed_sensor_switching_necessary = false;
-	const int prev_airspeed_index = static_cast<int>(_prev_airspeed_index);
+	const int prev_airspeed_index = static_cast<int>(_prev_airspeed_src);
 	const int valid_airspeed_index = static_cast<int>(_valid_airspeed_src);
 
-	if (_prev_airspeed_index < AirspeedSource::SENSOR_1) {
+	if (_prev_airspeed_src < AirspeedSource::SENSOR_1) {
 		airspeed_sensor_switching_necessary = true;
 
 	} else {
@@ -675,29 +675,29 @@ void AirspeedModule::select_airspeed_and_publish()
 
 
 	// print warning or info, depending of whether airspeed got declared invalid or healthy
-	if (_valid_airspeed_src != _prev_airspeed_index &&
+	if (_valid_airspeed_src != _prev_airspeed_src &&
 	    _number_of_airspeed_sensors > 0) {
 		if (_vehicle_status.arming_state != vehicle_status_s::ARMING_STATE_ARMED
-		    && _prev_airspeed_index > AirspeedSource::GROUND_MINUS_WIND
+		    && _prev_airspeed_src > AirspeedSource::GROUND_MINUS_WIND
 		    && prev_airspeed_index <= MAX_NUM_AIRSPEED_SENSORS) {
 			mavlink_log_critical(&_mavlink_log_pub, "Airspeed sensor failure detected. Check connection and reboot.\t");
 			events::send(events::ID("airspeed_selector_sensor_failure_disarmed"), events::Log::Critical,
 				     "Airspeed sensor failure detected. Check connection and reboot");
 
-		} else if (_prev_airspeed_index > AirspeedSource::GROUND_MINUS_WIND
+		} else if (_prev_airspeed_src > AirspeedSource::GROUND_MINUS_WIND
 			   && prev_airspeed_index <= MAX_NUM_AIRSPEED_SENSORS) {
 			mavlink_log_critical(&_mavlink_log_pub,
 					     "Airspeed sensor failure detected. Return to launch (RTL) is advised.\t");
 			events::send(events::ID("airspeed_selector_sensor_failure"), events::Log::Critical,
 				     "Airspeed sensor failure detected. Return to launch (RTL) is advised");
 
-		} else if (_prev_airspeed_index == AirspeedSource::GROUND_MINUS_WIND
+		} else if (_prev_airspeed_src == AirspeedSource::GROUND_MINUS_WIND
 			   && _valid_airspeed_src == AirspeedSource::DISABLED) {
 			mavlink_log_info(&_mavlink_log_pub, "Airspeed estimation invalid\t");
 			events::send(events::ID("airspeed_selector_estimation_invalid"), events::Log::Error,
 				     "Airspeed estimation invalid");
 
-		} else if (_prev_airspeed_index == AirspeedSource::DISABLED
+		} else if (_prev_airspeed_src == AirspeedSource::DISABLED
 			   && _valid_airspeed_src == AirspeedSource::GROUND_MINUS_WIND) {
 			mavlink_log_info(&_mavlink_log_pub, "Airspeed estimation valid\t");
 			events::send(events::ID("airspeed_selector_estimation_valid"), events::Log::Info,
@@ -731,7 +731,7 @@ void AirspeedModule::select_airspeed_and_publish()
 	airspeed_validated.pitch_filtered = _airspeed_validator[valid_airspeed_index - 1].get_pitch_filtered();
 
 	airspeed_validated.airspeed_source = valid_airspeed_index;
-	_prev_airspeed_index = _valid_airspeed_src;
+	_prev_airspeed_src = _valid_airspeed_src;
 
 	switch (_valid_airspeed_src) {
 	case AirspeedSource::DISABLED:
