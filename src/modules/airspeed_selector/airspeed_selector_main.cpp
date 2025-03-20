@@ -705,7 +705,7 @@ void AirspeedModule::select_airspeed_and_publish()
 
 		} else {
 			mavlink_log_critical(&_mavlink_log_pub, "Airspeed sensor healthy, start using again (%i, %i)\t", prev_airspeed_index,
-					 valid_airspeed_index);
+					     valid_airspeed_index);
 			/* EVENT
 			 * @description Previously selected sensor index: {1}, current sensor index: {2}.
 			 */

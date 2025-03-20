@@ -1260,10 +1260,8 @@ void Ekf::clearInhibitedStateKalmanGains(VectorState &K) const
 
 #endif // CONFIG_EKF2_MAGNETOMETER
 
-	bool clear_wind_gain = false;
 #if defined(CONFIG_EKF2_WIND)
-	clear_wind_gain = !_control_status.flags.wind;
-#endif // CONFIG_EKF2_WIND
+	bool clear_wind_gain = !_control_status.flags.wind;
 #if defined(CONFIG_EKF2_AIRSPEED)
 	clear_wind_gain |= _synthetic_airspeed;
 #endif // CONFIG_EKF2_AIRSPEED
@@ -1273,6 +1271,8 @@ void Ekf::clearInhibitedStateKalmanGains(VectorState &K) const
 			K(State::wind_vel.idx + i) = 0.f;
 		}
 	}
+
+#endif // CONFIG_EKF2_WIND
 }
 
 float Ekf::getHeadingInnov() const
