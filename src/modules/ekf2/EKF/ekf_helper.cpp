@@ -1266,7 +1266,7 @@ void Ekf::clearInhibitedStateKalmanGains(VectorState &K) const
 	clear_wind_gain |= _synthetic_airspeed;
 #endif // CONFIG_EKF2_AIRSPEED
 
-	if (clear_wind_gain) {
+	if (clear_wind_gain && !_enforce_wind_fusion) {
 		for (unsigned i = 0; i < State::wind_vel.dof; i++) {
 			K(State::wind_vel.idx + i) = 0.f;
 		}
