@@ -67,6 +67,7 @@
 #include <uORB/topics/vehicle_status.h>
 #include <uORB/topics/vtol_vehicle_status.h>
 #include <uORB/topics/airspeed_wind.h>
+#include <uORB/topics/flight_phase_estimation.h>
 
 using namespace time_literals;
 
@@ -128,6 +129,7 @@ private:
 	uORB::Subscription _position_setpoint_sub{ORB_ID(position_setpoint)};
 	uORB::Subscription _launch_detection_status_sub{ORB_ID(launch_detection_status)};
 	uORB::SubscriptionMultiArray<airspeed_s, MAX_NUM_AIRSPEED_SENSORS> _airspeed_subs{ORB_ID::airspeed};
+	uORB::SubscriptionData<flight_phase_estimation_s> _flight_phase_estimation_sub{ORB_ID(flight_phase_estimation)};
 
 
 	tecs_status_s _tecs_status {};
@@ -218,6 +220,7 @@ private:
 	void 		update_wind_estimator_sideslip(); /**< update the wind estimator instance only fusing sideslip */
 	void		update_ground_minus_wind_airspeed(); /**< update airspeed estimate based on groundspeed minus windspeed */
 	void 		select_airspeed_and_publish(); /**< select airspeed sensor (or groundspeed-windspeed) */
+	float		get_synthetic_airspeed(float throttle);
 
 };
 
@@ -626,7 +629,6 @@ void AirspeedModule::select_airspeed_and_publish()
 	// we need to re-evaluate the sensors if we're currently not on a phyisical sensor or the current sensor got invalid
 	bool airspeed_sensor_switching_necessary = false;
 	const int prev_airspeed_index = static_cast<int>(_prev_airspeed_src);
-	const int valid_airspeed_index = static_cast<int>(_valid_airspeed_src);
 
 	if (_prev_airspeed_src < AirspeedSource::SENSOR_1) {
 		airspeed_sensor_switching_necessary = true;
@@ -673,6 +675,7 @@ void AirspeedModule::select_airspeed_and_publish()
 		}
 	}
 
+	const int valid_airspeed_index = static_cast<int>(_valid_airspeed_src);
 
 	// print warning or info, depending of whether airspeed got declared invalid or healthy
 	if (_valid_airspeed_src != _prev_airspeed_src &&
@@ -742,29 +745,14 @@ void AirspeedModule::select_airspeed_and_publish()
 		airspeed_validated.calibrated_airspeed_m_s = _ground_minus_wind_CAS;
 		airspeed_validated.true_airspeed_m_s = _ground_minus_wind_TAS;
 		airspeed_validated.calibrated_ground_minus_wind_m_s = _ground_minus_wind_CAS;
+		airspeed_validated.calibraded_airspeed_synth_m_s = get_synthetic_airspeed(airspeed_validated.throttle_filtered);
 
 		break;
 
 	case AirspeedSource::SYNTHETIC: {
 			airspeed_validated.throttle_filtered = _airspeed_validator[0].get_throttle_filtered();
 			airspeed_validated.pitch_filtered = _airspeed_validator[0].get_pitch_filtered();
-
-			float synthetic_airspeed;
-
-			if (airspeed_validated.throttle_filtered < _param_fw_thr_trim.get() && _param_fw_thr_aspd_min.get() > 0.f) {
-				synthetic_airspeed = interpolate(airspeed_validated.throttle_filtered, _param_fw_thr_aspd_min.get(),
-								 _param_fw_thr_trim.get(),
-								 _param_fw_airspd_min.get(), _param_fw_airspd_trim.get());
-
-			} else if (airspeed_validated.throttle_filtered > _param_fw_thr_trim.get() && _param_fw_thr_aspd_max.get() > 0.f) {
-				synthetic_airspeed = interpolate(airspeed_validated.throttle_filtered, _param_fw_thr_trim.get(),
-								 _param_fw_thr_aspd_max.get(),
-								 _param_fw_airspd_trim.get(), _param_fw_airspd_max.get());
-
-			} else {
-				synthetic_airspeed = _param_fw_airspd_trim.get();
-			}
-
+			float synthetic_airspeed = get_synthetic_airspeed(airspeed_validated.throttle_filtered);
 			airspeed_validated.calibrated_airspeed_m_s = synthetic_airspeed;
 			airspeed_validated.indicated_airspeed_m_s = synthetic_airspeed;
 			airspeed_validated.calibraded_airspeed_synth_m_s = synthetic_airspeed;
@@ -778,6 +766,7 @@ void AirspeedModule::select_airspeed_and_publish()
 		airspeed_validated.calibrated_airspeed_m_s = _airspeed_validator[valid_airspeed_index - 1].get_CAS();
 		airspeed_validated.true_airspeed_m_s = _airspeed_validator[valid_airspeed_index - 1].get_TAS();
 		airspeed_validated.calibrated_ground_minus_wind_m_s = _ground_minus_wind_CAS;
+		airspeed_validated.calibraded_airspeed_synth_m_s = get_synthetic_airspeed(airspeed_validated.throttle_filtered);
 		break;
 	}
 
@@ -802,6 +791,33 @@ void AirspeedModule::select_airspeed_and_publish()
 		_wind_est_pub[i + 1].publish(wind_est);
 	}
 
+}
+
+float AirspeedModule::get_synthetic_airspeed(float throttle)
+{
+	float synthetic_airspeed;
+	_flight_phase_estimation_sub.update();
+	flight_phase_estimation_s flight_phase_estimation = _flight_phase_estimation_sub.get();
+
+	if (flight_phase_estimation.flight_phase == flight_phase_estimation_s::FLIGHT_PHASE_LEVEL
+	    && _time_now_usec - flight_phase_estimation.timestamp < 1_s) {
+		synthetic_airspeed = _param_fw_airspd_trim.get();
+
+	} else if (throttle < _param_fw_thr_trim.get() && _param_fw_thr_aspd_min.get() > 0.f) {
+		synthetic_airspeed = interpolate(throttle, _param_fw_thr_aspd_min.get(),
+						 _param_fw_thr_trim.get(),
+						 _param_fw_airspd_min.get(), _param_fw_airspd_trim.get());
+
+	} else if (throttle > _param_fw_thr_trim.get() && _param_fw_thr_aspd_max.get() > 0.f) {
+		synthetic_airspeed = interpolate(throttle, _param_fw_thr_trim.get(),
+						 _param_fw_thr_aspd_max.get(),
+						 _param_fw_airspd_trim.get(), _param_fw_airspd_max.get());
+
+	} else {
+		synthetic_airspeed = _param_fw_airspd_trim.get();
+	}
+
+	return synthetic_airspeed;
 }
 
 int AirspeedModule::custom_command(int argc, char *argv[])
