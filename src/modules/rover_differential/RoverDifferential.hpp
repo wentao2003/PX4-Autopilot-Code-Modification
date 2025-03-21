@@ -58,7 +58,8 @@
 // Local includes
 #include "DifferentialRateControl/DifferentialRateControl.hpp"
 #include "DifferentialAttControl/DifferentialAttControl.hpp"
-#include "DifferentialPosVelControl/DifferentialPosVelControl.hpp"
+#include "DifferentialVelControl/DifferentialVelControl.hpp"
+#include "DifferentialPosControl/DifferentialPosControl.hpp"
 
 class RoverDifferential : public ModuleBase<RoverDifferential>, public ModuleParams,
 	public px4::ScheduledWorkItem
@@ -127,7 +128,8 @@ private:
 	// Class instances
 	DifferentialRateControl _differential_rate_control{this};
 	DifferentialAttControl _differential_att_control{this};
-	DifferentialPosVelControl _differential_pos_vel_control{this};
+	DifferentialVelControl _differential_vel_control{this};
+	DifferentialPosControl _differential_pos_control{this};
 
 	// Variables
 	hrt_abstime _timestamp{0};
