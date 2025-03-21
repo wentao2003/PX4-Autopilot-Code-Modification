@@ -58,7 +58,8 @@
 // Local includes
 #include "MecanumRateControl/MecanumRateControl.hpp"
 #include "MecanumAttControl/MecanumAttControl.hpp"
-#include "MecanumPosVelControl/MecanumPosVelControl.hpp"
+#include "MecanumVelControl/MecanumVelControl.hpp"
+#include "MecanumPosControl/MecanumPosControl.hpp"
 
 class RoverMecanum : public ModuleBase<RoverMecanum>, public ModuleParams,
 	public px4::ScheduledWorkItem
@@ -126,9 +127,10 @@ private:
 	uORB::Publication<rover_steering_setpoint_s> _rover_steering_setpoint_pub{ORB_ID(rover_steering_setpoint)};
 
 	// Class instances
-	MecanumRateControl   _mecanum_rate_control{this};
-	MecanumAttControl    _mecanum_att_control{this};
-	MecanumPosVelControl _mecanum_pos_vel_control{this};
+	MecanumRateControl _mecanum_rate_control{this};
+	MecanumAttControl  _mecanum_att_control{this};
+	MecanumVelControl  _mecanum_vel_control{this};
+	MecanumPosControl  _mecanum_pos_control{this};
 
 	// Variables
 	hrt_abstime _timestamp{0};
