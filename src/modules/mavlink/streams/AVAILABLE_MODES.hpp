@@ -121,6 +121,7 @@ private:
 			available_modes.properties |= MAV_MODE_PROPERTY_NOT_USER_SELECTABLE;
 		}
 
+		PX4_INFO("AVAILABLE_MODES sending: %s", available_modes.mode_name);
 		mavlink_msg_available_modes_send_struct(_mavlink->get_channel(), &available_modes);
 	}
 
@@ -129,7 +130,7 @@ private:
 	{
 		bool ret = false;
 		int mode_index = roundf(param2);
-		PX4_DEBUG("AVAILABLE_MODES request (%i)", mode_index);
+		PX4_INFO("AVAILABLE_MODES request (%i)", mode_index);
 
 		vehicle_status_s vehicle_status;
 
@@ -229,6 +230,7 @@ private:
 		if (_had_dynamic_update) {
 			mavlink_available_modes_monitor_t monitor{};
 			monitor.seq = _dynamic_update_seq;
+			PX4_INFO("AVAILABLE_MODES_MONITOR seq: %u", monitor.seq);
 			mavlink_msg_available_modes_monitor_send_struct(_mavlink->get_channel(), &monitor);
 			return true;
 		}
