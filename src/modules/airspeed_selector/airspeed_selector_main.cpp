@@ -66,7 +66,6 @@
 #include <uORB/topics/vehicle_land_detected.h>
 #include <uORB/topics/vehicle_local_position.h>
 #include <uORB/topics/vehicle_status.h>
-#include <uORB/topics/vtol_vehicle_status.h>
 #include <uORB/topics/vehicle_thrust_setpoint.h>
 #include <uORB/topics/airspeed_wind.h>
 #include <uORB/topics/flight_phase_estimation.h>
@@ -128,7 +127,6 @@ private:
 	uORB::Subscription _vehicle_land_detected_sub{ORB_ID(vehicle_land_detected)};
 	uORB::Subscription _vehicle_local_position_sub{ORB_ID(vehicle_local_position)};
 	uORB::Subscription _vehicle_status_sub{ORB_ID(vehicle_status)};
-	uORB::Subscription _vtol_vehicle_status_sub{ORB_ID(vtol_vehicle_status)};
 	uORB::Subscription _vehicle_thrust_setpoint_0_sub{ORB_ID(vehicle_thrust_setpoint), 0};
 	uORB::Subscription _position_setpoint_sub{ORB_ID(position_setpoint)};
 	uORB::Subscription _launch_detection_status_sub{ORB_ID(launch_detection_status)};
@@ -143,7 +141,6 @@ private:
 	vehicle_land_detected_s _vehicle_land_detected {};
 	vehicle_local_position_s _vehicle_local_position {};
 	vehicle_status_s _vehicle_status {};
-	vtol_vehicle_status_s _vtol_vehicle_status {};
 	position_setpoint_s _position_setpoint {};
 
 	WindEstimator	_wind_estimator_sideslip; /**< wind estimator instance only fusing sideslip */
@@ -557,7 +554,6 @@ void AirspeedModule::poll_topics()
 	_vehicle_air_data_sub.update(&_vehicle_air_data);
 	_vehicle_land_detected_sub.update(&_vehicle_land_detected);
 	_vehicle_status_sub.update(&_vehicle_status);
-	_vtol_vehicle_status_sub.update(&_vtol_vehicle_status);
 	_vehicle_local_position_sub.update(&_vehicle_local_position);
 	_position_setpoint_sub.update(&_position_setpoint);
 
@@ -633,7 +629,6 @@ void AirspeedModule::update_ground_minus_wind_airspeed()
 
 void AirspeedModule::select_airspeed_and_publish()
 {
-
 	// we need to re-evaluate the sensors if we're currently not on a phyisical sensor or the current sensor got invalid
 	bool airspeed_sensor_switching_necessary = false;
 	const int prev_airspeed_index = static_cast<int>(_prev_airspeed_src);
@@ -673,7 +668,7 @@ void AirspeedModule::select_airspeed_and_publish()
 		     || _param_airspeed_primary_index.get() == static_cast<int>(AirspeedSource::GROUND_MINUS_WIND))) {
 			_valid_airspeed_src = AirspeedSource::GROUND_MINUS_WIND;
 
-		} else if (_param_airspeed_fallback.get() == 2
+		} else if (_param_airspeed_fallback.get() == static_cast<int>(AirspeedSource::SYNTHETIC)
 			   || _param_airspeed_primary_index.get() == static_cast<int>(AirspeedSource::SYNTHETIC)) {
 			_valid_airspeed_src = AirspeedSource::SYNTHETIC;
 

@@ -161,12 +161,9 @@ PARAM_DEFINE_INT32(ASPD_PRIMARY, 1);
 PARAM_DEFINE_INT32(ASPD_DO_CHECKS, 7);
 
 /**
- * Enable fallback to sensor-less airspeed estimation
+ * Fallback options
  *
- * If set to true and airspeed checks are enabled, it will use a sensor-less airspeed estimation based on groundspeed
- * minus windspeed if no other airspeed sensor available to fall back to.
- *
- * @value 0 Disable fallback to sensor-less estimation
+ * @value 0 Fallback only to other airspeed sensors
  * @value 1 Fallback to groundspeed-minus-windspeed airspeed estimation
  * @value 2 Fallback to thrust based airspeed estimation
  * @group Airspeed Validator
