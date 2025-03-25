@@ -212,6 +212,10 @@ void Ekf::fuseAirspeed(const airspeedSample &airspeed_sample, estimator_aid_sour
 		K.slice<State::wind_vel.dof, 1>(State::wind_vel.idx, 0) = K_wind;
 	}
 
+	if (_synthetic_airspeed) {
+		K.slice<State::wind_vel.dof, 1>(State::wind_vel.idx, 0) = 0.f;
+	}
+
 	measurementUpdate(K, H, aid_src.observation_variance, aid_src.innovation);
 
 	aid_src.fused = true;
