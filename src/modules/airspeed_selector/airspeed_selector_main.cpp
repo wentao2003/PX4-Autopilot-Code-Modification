@@ -664,11 +664,11 @@ void AirspeedModule::select_airspeed_and_publish()
 
 		// _gnss_lpos_valid determines if ground-wind estimate is valid
 		if (_gnss_lpos_valid &&
-		    (_param_airspeed_fallback.get() == static_cast<int>(AirspeedSource::GROUND_MINUS_WIND)
+		    (_param_airspeed_fallback.get() == 1
 		     || _param_airspeed_primary_index.get() == static_cast<int>(AirspeedSource::GROUND_MINUS_WIND))) {
 			_valid_airspeed_src = AirspeedSource::GROUND_MINUS_WIND;
 
-		} else if (_param_airspeed_fallback.get() == static_cast<int>(AirspeedSource::SYNTHETIC)
+		} else if (_param_airspeed_fallback.get() == 2
 			   || _param_airspeed_primary_index.get() == static_cast<int>(AirspeedSource::SYNTHETIC)) {
 			_valid_airspeed_src = AirspeedSource::SYNTHETIC;
 
