@@ -68,7 +68,7 @@ struct airspeed_validator_update_data {
 	float vel_test_ratio;
 	float hdg_test_ratio;
 	bool in_fixed_wing_flight;
-	float fixed_wing_tecs_throttle;
+	float fixed_wing_throttle_filtered;
 	float fixed_wing_tecs_throttle_trim;
 	uint64_t tecs_timestamp;
 };
@@ -89,7 +89,6 @@ public:
 	bool get_airspeed_valid() { return _airspeed_valid; }
 	float get_CAS_scale_validated() {return _CAS_scale_validated;}
 	float get_airspeed_derivative() { return _IAS_derivative.getState(); }
-	float get_throttle_filtered() { return _throttle_filtered.getState(); }
 	float get_pitch_filtered() { return _pitch_filtered.getState(); }
 
 	airspeed_wind_s get_wind_estimator_states(uint64_t timestamp);
@@ -181,10 +180,7 @@ private:
 	bool _first_principle_check_failed{false}; ///< first principle check has detected failure
 	float _aspd_fp_t_window{0.f}; ///< time window for first principle check
 	FilteredDerivative<float> _IAS_derivative; ///< indicated airspeed derivative for first principle check
-	static constexpr float _kThrottleFilterTimeConstant{0.5f};
-	AlphaFilter<float> _throttle_filtered{_kThrottleFilterTimeConstant};
 	AlphaFilter<float> _pitch_filtered; ///< filtered pitch for first principle check
-	uint64_t _t_last_throttle_fw{0};
 	hrt_abstime _time_last_first_principle_check{0}; ///< time airspeed first principle was last checked (uSec)
 	hrt_abstime _time_last_first_principle_check_passing{0}; ///< time airspeed first principle was last passing (uSec)
 	float _param_psp_off{0.0f}; ///< parameter pitch in level flight [rad]
@@ -220,7 +216,6 @@ private:
 	void check_first_principle(const uint64_t timestamp, const float throttle, const float throttle_trim,
 				   const uint64_t tecs_timestamp, const Quatf &att_q);
 	void update_airspeed_valid_status(const uint64_t timestamp);
-	void update_throttle_filter(uint64_t timestamp, float throttle_fw);
 	void reset();
 	void reset_CAS_scale_check();
 
