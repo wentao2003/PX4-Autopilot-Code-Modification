@@ -668,8 +668,9 @@ void AirspeedModule::select_airspeed_and_publish()
 		     || _param_airspeed_primary_index.get() == static_cast<int>(AirspeedSource::GROUND_MINUS_WIND))) {
 			_valid_airspeed_src = AirspeedSource::GROUND_MINUS_WIND;
 
-		} else if (_param_airspeed_fallback.get() == 2
-			   || _param_airspeed_primary_index.get() == static_cast<int>(AirspeedSource::SYNTHETIC)) {
+		} else if ((_param_airspeed_fallback.get() == 2
+			    || _param_airspeed_primary_index.get() == static_cast<int>(AirspeedSource::SYNTHETIC))
+			   && _vehicle_status.vehicle_type == vehicle_status_s::VEHICLE_TYPE_FIXED_WING) {
 			_valid_airspeed_src = AirspeedSource::SYNTHETIC;
 
 		} else {
