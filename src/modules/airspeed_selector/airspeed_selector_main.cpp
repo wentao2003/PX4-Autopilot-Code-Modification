@@ -803,8 +803,8 @@ float AirspeedModule::get_synthetic_airspeed(float throttle)
 	_flight_phase_estimation_sub.update();
 	flight_phase_estimation_s flight_phase_estimation = _flight_phase_estimation_sub.get();
 
-	if (flight_phase_estimation.flight_phase == flight_phase_estimation_s::FLIGHT_PHASE_LEVEL
-	    && _time_now_usec - flight_phase_estimation.timestamp < 1_s) {
+	if (flight_phase_estimation.flight_phase != flight_phase_estimation_s::FLIGHT_PHASE_LEVEL
+	    || _time_now_usec - flight_phase_estimation.timestamp > 1_s) {
 		synthetic_airspeed = _param_fw_airspd_trim.get();
 
 	} else if (throttle < _param_fw_thr_trim.get() && _param_fw_thr_aspd_min.get() > 0.f) {
