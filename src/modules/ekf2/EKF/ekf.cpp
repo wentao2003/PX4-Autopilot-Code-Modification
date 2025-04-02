@@ -87,8 +87,8 @@ void Ekf::reset()
 	_control_status.value = 0;
 	_control_status_prev.value = 0;
 
-	_control_status.flags.in_air = true;
-	_control_status_prev.flags.in_air = true;
+	_control_status.flags.in_air = false;
+	_control_status_prev.flags.in_air = false;
 
 	_fault_status.value = 0;
 	_innov_check_fail_status.value = 0;

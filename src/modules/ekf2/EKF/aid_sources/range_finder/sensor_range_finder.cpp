@@ -41,16 +41,17 @@
 #include <aid_sources/range_finder/sensor_range_finder.hpp>
 
 #include <lib/matrix/matrix/math.hpp>
+#include "ekf.h"
 
 namespace estimator
 {
 namespace sensor
 {
 
-void SensorRangeFinder::runChecks(const uint64_t current_time_us, const matrix::Dcmf &R_to_earth)
+void SensorRangeFinder::runChecks(const uint64_t current_time_us, const matrix::Dcmf &R_to_earth, bool in_air)
 {
 	updateSensorToEarthRotation(R_to_earth);
-	updateValidity(current_time_us);
+	updateValidity(current_time_us, in_air);
 }
 
 void SensorRangeFinder::updateSensorToEarthRotation(const matrix::Dcmf &R_to_earth)
@@ -60,13 +61,14 @@ void SensorRangeFinder::updateSensorToEarthRotation(const matrix::Dcmf &R_to_ear
 	_cos_tilt_rng_to_earth = R_to_earth(2, 0) * _sin_pitch_offset + R_to_earth(2, 2) * _cos_pitch_offset;
 }
 
-void SensorRangeFinder::updateValidity(uint64_t current_time_us)
+void SensorRangeFinder::updateValidity(uint64_t current_time_us, bool in_air)
 {
 	updateDtDataLpf(current_time_us);
 
 	if (_is_faulty || isSampleOutOfDate(current_time_us) || !isDataContinuous()) {
 		_is_sample_valid = false;
 		_is_regularly_sending_data = false;
+		ECL_INFO("fail1");
 		return;
 	}
 
@@ -79,21 +81,36 @@ void SensorRangeFinder::updateValidity(uint64_t current_time_us)
 		_time_bad_quality_us = _sample.quality == 0 ? current_time_us : _time_bad_quality_us;
 
 		if (!isQualityOk(current_time_us) || !isTiltOk() || !isDataInRange()) {
+			ECL_INFO("isQualityOk(current_time_us): %d", isQualityOk(current_time_us));
+			ECL_INFO("isTiltOk: %d", isTiltOk());
+
 			return;
 		}
 
 		updateStuckCheck();
 		updateFogCheck(getDistBottom(), _sample.time_us);
 
-		if (!_is_stuck && !_is_blocked) {
+		// If we're on the ground we expect the distance sensor to be stuck/blocked
+		if (!in_air) {
 			_is_sample_valid = true;
 			_time_last_valid_us = _sample.time_us;
+
+		} else if (!_is_stuck && !_is_blocked) {
+			_is_sample_valid = true;
+			_time_last_valid_us = _sample.time_us;
+		} else {
+			ECL_INFO("_is_stuck: %d", _is_stuck);
+			ECL_INFO("_is_blocked: %d", _is_blocked);
 		}
 	}
 }
 
 bool SensorRangeFinder::isQualityOk(uint64_t current_time_us) const
 {
+	if (_time_bad_quality_us == 0) {
+		return true;
+	}
+
 	return current_time_us - _time_bad_quality_us > _quality_hyst_us;
 }
 

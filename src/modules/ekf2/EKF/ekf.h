@@ -758,6 +758,7 @@ private:
 	// update the terrain vertical position estimate using a height above ground measurement from the range finder
 	bool fuseHaglRng(estimator_aid_source1d_s &aid_src, bool update_height, bool update_terrain);
 	void updateRangeHagl(estimator_aid_source1d_s &aid_src);
+	bool updateRangeSensorData(uint64_t imu_timestamp);
 	void resetTerrainToRng(estimator_aid_source1d_s &aid_src);
 	float getRngVar() const;
 # endif // CONFIG_EKF2_RANGE_FINDER

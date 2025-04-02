@@ -256,7 +256,7 @@ private:
 			// publish if updated
 			T status_out{status};
 			status_out.estimator_instance = _instance;
-			status_out.timestamp = hrt_absolute_time();
+			status_out.timestamp = _replay_mode ? status.timestamp_sample : hrt_absolute_time();
 			pub.publish(status_out);
 
 			// record timestamp sample

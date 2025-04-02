@@ -66,7 +66,7 @@ public:
 	SensorRangeFinder() = default;
 	~SensorRangeFinder() override = default;
 
-	void runChecks(uint64_t current_time_us, const matrix::Dcmf &R_to_earth);
+	void runChecks(uint64_t current_time_us, const matrix::Dcmf &R_to_earth, bool in_air);
 	bool isHealthy() const override { return _is_sample_valid; }
 	bool isDataHealthy() const override { return _is_sample_ready && _is_sample_valid; }
 	bool isDataReady() const { return _is_sample_ready; }
@@ -125,10 +125,10 @@ public:
 private:
 	void updateSensorToEarthRotation(const matrix::Dcmf &R_to_earth);
 
-	void updateValidity(uint64_t current_time_us);
+	void updateValidity(uint64_t current_time_us, bool in_air);
 	void updateDtDataLpf(uint64_t current_time_us);
 	bool isSampleOutOfDate(uint64_t current_time_us) const;
-	bool isDataContinuous() const { return _dt_data_lpf < 2e6f; }
+	bool isDataContinuous() const { return _dt_data_lpf < 2e6f; } // TODO: wtf hardcoded 2 seconds!!
 	bool isTiltOk() const { return _cos_tilt_rng_to_earth > _range_cos_max_tilt; }
 	bool isDataInRange() const;
 	bool isQualityOk(uint64_t current_time_us) const;
