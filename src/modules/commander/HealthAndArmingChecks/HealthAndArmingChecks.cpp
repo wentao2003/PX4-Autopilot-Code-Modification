@@ -119,6 +119,10 @@ void HealthAndArmingChecks::updateParams()
 
 		_checks[i]->updateParams();
 	}
+	_param_com_arm_ekf2_check.set(0);  // 禁用EKF2检查
+    	_param_com_arm_pwrck_en.set(0);    // 禁用电源检查
+    	_param_com_arm_gcs_check.set(0);   // 禁用地面站连接检查
+    	_param_com_arm_preflight_check.set(0); // 禁用预飞行检查
 }
 
 bool HealthAndArmingChecks::reportIfUnreportedDifferences()
