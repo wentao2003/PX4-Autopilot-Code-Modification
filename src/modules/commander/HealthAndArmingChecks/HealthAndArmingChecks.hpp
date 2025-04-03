@@ -200,7 +200,7 @@ private:
 	};
 	// 在这里添加参数声明（只添加一次）
 	DEFINE_PARAMETERS(
-    	(ParamInt<px4::params::COM_ARM_EKF2_CHECK>) _param_com_arm_ekf2_check,
+    	(ParamInt<px4::params::COM_ARM_HELF_CHECK>) _param_com_arm_ekf2_check,
     	(ParamInt<px4::params::COM_ARM_PWRCK_EN>) _param_com_arm_pwrck_en,
     	(ParamInt<px4::params::COM_ARM_GCS_CHECK>) _param_com_arm_gcs_check,
     	(ParamInt<px4::params::COM_ARM_PREFLIGHT_CHECK>) _param_com_arm_preflight_check
